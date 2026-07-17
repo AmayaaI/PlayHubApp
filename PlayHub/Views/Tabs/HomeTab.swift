@@ -33,7 +33,7 @@ struct HomeTab: View {
                     // Logo
                     VStack(spacing: 8) {
 
-                        Text("🎮")
+                        Text("🎯")
                             .font(.system(size: 90))
 
                         Text("PlayHub")

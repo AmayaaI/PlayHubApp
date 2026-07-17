@@ -1,47 +1,55 @@
-//
-//  MapTab.swift
-//  PlayHub
-//
-//  Created by Amaya Mahavithane on 2026-07-06.
-//
-
 import SwiftUI
 import MapKit
 
 struct MapTab: View {
 
-    @StateObject var vm = StatsVM()
+    @StateObject private var locationService = LocationService.shared
+
+    @State private var cameraPosition: MapCameraPosition = .automatic
 
     var body: some View {
 
-        NavigationStack {
+        VStack {
 
-            Map {
+            Map(position: $cameraPosition) {
 
-                ForEach(vm.sessions) { session in
+                // Current location
+                Marker("You", coordinate: locationService.currentCoordinate)
 
-                    Marker(
-                        "\(session.score)",
-                        coordinate: CLLocationCoordinate2D(
-                            latitude: session.latitude,
-                            longitude: session.longitude
+                // Saved location
+                if let saved = locationService.savedCoordinate {
+                    Marker("Saved Location", coordinate: saved)
+                }
+            }
+            .onAppear {
+
+                cameraPosition = .region(
+                    MKCoordinateRegion(
+                        center: locationService.currentCoordinate,
+                        span: MKCoordinateSpan(
+                            latitudeDelta: 0.01,
+                            longitudeDelta: 0.01
                         )
                     )
-
-                }
-
+                )
             }
 
-            .navigationTitle("Game Map")
+            Button {
 
+                locationService.saveCurrentLocation()
+
+            } label: {
+
+                Label("Save My Location",
+                      systemImage: "location.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .padding()
         }
-
     }
-
 }
 
 #Preview {
-
     MapTab()
-
 }

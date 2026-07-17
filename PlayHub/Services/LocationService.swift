@@ -1,10 +1,3 @@
-//
-//  LocationService.swift
-//  PlayHub
-//
-//  Created by Amaya Mahavithane on 2026-07-06.
-//
-
 import Foundation
 import CoreLocation
 import Combine
@@ -22,6 +15,7 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
         super.init()
 
         manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyBest
         manager.requestWhenInUseAuthorization()
         manager.startUpdatingLocation()
     }
@@ -33,6 +27,29 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
 
         latitude = location.coordinate.latitude
         longitude = location.coordinate.longitude
-        manager.stopUpdatingLocation()
+    }
+
+    func saveCurrentLocation() {
+
+        UserDefaults.standard.set(latitude, forKey: "savedLatitude")
+        UserDefaults.standard.set(longitude, forKey: "savedLongitude")
+
+        print("Location Saved")
+    }
+
+    var savedCoordinate: CLLocationCoordinate2D? {
+
+        let lat = UserDefaults.standard.double(forKey: "savedLatitude")
+        let lon = UserDefaults.standard.double(forKey: "savedLongitude")
+
+        if lat == 0 && lon == 0 {
+            return nil
+        }
+
+        return CLLocationCoordinate2D(latitude: lat, longitude: lon)
+    }
+
+    var currentCoordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
     }
 }

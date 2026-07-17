@@ -1,206 +1,579 @@
-//
-//  TapFrenzyView.swift
-//  PlayHub
-//
-//  Created by Amaya Mahavithane on 2026-07-06.
-//
-
 import SwiftUI
 import Combine
 
 struct TapFrenzyView: View {
 
+    // MARK: Game State
+
     @State private var score = 0
     @State private var highScore = 0
-    @State private var timeRemaining = 10
+    @State private var level = 1
+    @State private var timeRemaining = 30
     @State private var gameOver = false
 
-    // Moving target
+    // MARK: Button Position
+
     @State private var buttonX: CGFloat = 200
-    @State private var buttonY: CGFloat = 400
+    @State private var buttonY: CGFloat = 450
 
-    // Shrinking button
-    @State private var buttonSize: CGFloat = 150
-    @StateObject private var vm = TapFrenzyVM()
+    @State private var buttonScale: CGFloat = 1
+    @State private var showLevelUp = false
 
-    let timer = Timer.publish(every: 1,
-                              on: .main,
-                              in: .common).autoconnect()
+    // MARK: Movement
 
-    let moveTimer = Timer.publish(every: 2,
-                                  on: .main,
-                                  in: .common).autoconnect()
+    @State private var lastMove = Date()
+
+    let timer = Timer.publish(
+        every: 1,
+        on: .main,
+        in: .common
+    )
+    .autoconnect()
+
+    let moveTimer = Timer.publish(
+        every: 0.1,
+        on: .main,
+        in: .common
+    )
+    .autoconnect()
+
 
     var body: some View {
 
-        ZStack {
+        GeometryReader { geo in
 
-            Color.blue.opacity(0.1)
+            ZStack {
+
+                // MARK: Background
+
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.05, green: 0.08, blue: 0.20),
+                        Color.blue,
+                        Color.purple
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
                 .ignoresSafeArea()
 
-            if !gameOver {
-
-                VStack {
-
-                    Text("Tap Frenzy")
-                        .font(.largeTitle)
-                        .bold()
-
-                    Text("Score: \(score)")
-                        .font(.title)
-
-                    Text("Time: \(timeRemaining)")
-                        .font(.title2)
-
-                    Spacer()
-                }
-
-                Button {
-
-                    guard !gameOver else { return }
-
-                    score += 1
-
-                } label: {
-
-                    Text("TAP")
-                        .font(.largeTitle)
-                        .bold()
-                        .frame(width: buttonSize, height: buttonSize)
-                        .background(Color.orange)
-                        .foregroundColor(.white)
-                        .clipShape(Circle())
-                }
-                .position(x: buttonX, y: buttonY)
-
-            } else {
-
-                VStack(spacing: 20) {
-
-                    Text("Game Over")
-                        .font(.largeTitle)
-                        .bold()
-
-                    Text("Final Score: \(score)")
-                        .font(.title)
-
-                    if score == highScore && score > 0 {
-                        Text("🎉 New High Score!")
-                            .font(.title2)
-                            .foregroundColor(.green)
-                    }
-
-                    Text("High Score: \(highScore)")
-                        .font(.title2)
-
-                    Button("Play Again") {
-                        restartGame()
-                    }
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                }
-            }
-        }
-
-        .onAppear {
-            resetButtonPosition()
-        }
-
-        .onReceive(timer) { _ in
-
-            guard !gameOver else { return }
-
-            if timeRemaining > 0 {
-
-                timeRemaining -= 1
-
-                // Shrinking challenge
-                buttonSize = max(60, buttonSize - 9)
-
-            }
-//            else {
-//                
-//                gameOver = true
-//
-//                if score > highScore {
-//                    highScore = score
-//                }
-//
-//                let session = GameSession(
-//                    id: UUID(),
-//                    mode: .tapFrenzy,
-//                    score: score,
-//                    timestamp: Date(),
-//                    latitude: LocationService.shared.latitude,
-//                    longitude: LocationService.shared.longitude
-//                )
-//
-//                GameStorage.shared.saveSession(session)
-//            }
-            else {
 
                 if !gameOver {
 
-                    gameOver = true
 
-                    if score > highScore {
-                        highScore = score
+                    VStack {
+
+                        Text("⚡ TAP FRENZY")
+                            .font(.system(size: 34,
+                                          weight: .black))
+                            .foregroundColor(.white)
+
+
+                        HStack(spacing: 12) {
+
+
+                            infoCard(
+                                title: "SCORE",
+                                value: "\(score)",
+                                color: .orange
+                            )
+
+
+                            infoCard(
+                                title: "TIME",
+                                value: "\(timeRemaining)",
+                                color: .cyan
+                            )
+
+
+                            infoCard(
+                                title: "LEVEL",
+                                value: "\(level)",
+                                color: .green
+                            )
+
+                        }
+                        .padding(.top,20)
+
+
+                        Spacer()
+
                     }
 
-                    let session = GameSession(
-                        id: UUID(),
-                        mode: .tapFrenzy,
-                        score: score,
-                        timestamp: Date(),
-                        latitude: LocationService.shared.latitude,
-                        longitude: LocationService.shared.longitude
+
+
+                    // MARK: TAP BUTTON
+
+
+                    Button {
+
+
+                        score += 1
+
+
+                        withAnimation(.spring()) {
+
+                            buttonScale = 0.85
+
+                        }
+
+
+                        DispatchQueue.main.asyncAfter(
+                            deadline: .now()+0.1
+                        ){
+
+                            withAnimation {
+
+                                buttonScale = 1
+
+                            }
+                        }
+
+
+                    } label: {
+
+
+                        ZStack {
+
+
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors:[
+                                            .orange,
+                                            .red
+                                        ],
+                                        startPoint:.topLeading,
+                                        endPoint:.bottomTrailing
+                                    )
+                                )
+                                .frame(
+                                    width:170,
+                                    height:170
+                                )
+
+
+                            Circle()
+                                .stroke(
+                                    .white,
+                                    lineWidth:5
+                                )
+                                .frame(
+                                    width:170,
+                                    height:170
+                                )
+
+
+                            Text("TAP")
+                                .font(
+                                    .system(
+                                        size:40,
+                                        weight:.black
+                                    )
+                                )
+                                .foregroundColor(.white)
+
+                        }
+
+                    }
+                    .scaleEffect(buttonScale)
+                    .shadow(
+                        color:.orange,
+                        radius:30
                     )
+                    .position(
+                        x:buttonX,
+                        y:buttonY
+                    )
+
+
+
+                }
+                else {
+
+
+                    VStack(spacing:25){
+
+
+                        Image(systemName:"trophy.fill")
+                            .font(.system(size:80))
+                            .foregroundColor(.yellow)
+
+
+                        Text("GAME OVER")
+                            .font(.largeTitle.bold())
+                            .foregroundColor(.white)
+
+
+                        Text("Score \(score)")
+                            .font(.system(size:60,
+                                          weight:.black))
+                            .foregroundColor(.yellow)
+
+
+
+                        Text("Best \(highScore)")
+                            .foregroundColor(.white)
+
+
+
+                        Button {
+
+
+                            restartGame(
+                                size:geo.size
+                            )
+
+
+                        }label:{
+
+
+                            Text("PLAY AGAIN")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(
+                                    width:230,
+                                    height:55
+                                )
+                                .background(
+                                    LinearGradient(
+                                        colors:[
+                                            .blue,
+                                            .purple
+                                        ],
+                                        startPoint:.leading,
+                                        endPoint:.trailing
+                                    )
+                                )
+                                .cornerRadius(20)
+
+                        }
+
+                    }
+
+                }
+
+
+                if showLevelUp {
+
+
+                    VStack {
+
+
+                        Text("🔥 LEVEL \(level)")
+                            .font(.system(
+                                size:45,
+                                weight:.black
+                            ))
+                            .foregroundColor(.yellow)
+
+
+
+                        Text("FASTER!")
+                            .font(.title.bold())
+                            .foregroundColor(.white)
+
+                    }
+                    .padding(30)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(25)
+
+                }
+
+            }
+
+
+            .onAppear {
+
+                resetButtonPosition(
+                    size:geo.size
+                )
+
+            }
+
+
+            // MARK: Countdown
+
+            .onReceive(timer){_ in
+
+
+                guard !gameOver else{
+                    return
+                }
+
+
+                timeRemaining -= 1
+
+
+
+                switch timeRemaining {
+
+
+                case 25:
+                    increaseLevel(2)
+
+
+                case 20:
+                    increaseLevel(3)
+
+
+                case 15:
+                    increaseLevel(4)
+
+
+                case 10:
+                    increaseLevel(5)
+
+
+                default:
+                    break
+
+                }
+
+
+//
+//                if timeRemaining <= 0 {
+//
+//
+//                    gameOver = true
+//
+//
+//                    if score > highScore {
+//
+//                        highScore = score
+//
+//                    }
+//
+//
+//                }
+
+                if timeRemaining <= 0 {
+
+
+                    gameOver = true
+
+
+                    if score > highScore {
+
+                        highScore = score
+
+                    }
+
+
+
+                    let session = GameSession(
+
+                        id: UUID(),
+
+                        mode: .tapFrenzy,
+
+                        score: score,
+
+                        timestamp: Date(),
+
+                        latitude: LocationService.shared.latitude,
+
+                        longitude: LocationService.shared.longitude
+
+                    )
+
 
                     GameStorage.shared.saveSession(session)
 
+
                 }
             }
-//            else {
-//
-//                gameOver = true
-//
-//                if score > highScore {
-//                    highScore = score
-//                }
-//            }
-        }
 
-        .onReceive(moveTimer) { _ in
 
-            guard !gameOver else { return }
 
-            withAnimation {
-                resetButtonPosition()
+            // MARK: Movement Check
+
+
+            .onReceive(moveTimer){_ in
+
+
+                guard !gameOver else{
+                    return
+                }
+
+
+                let now = Date()
+
+
+                if now.timeIntervalSince(lastMove)
+                    >= movementSpeed {
+
+
+                    withAnimation(.spring()){
+
+
+                        resetButtonPosition(
+                            size:geo.size
+                        )
+
+
+                    }
+
+
+                    lastMove = now
+
+                }
+
             }
+
         }
+
     }
 
-    // MARK: - Restart Game
-    func restartGame() {
+
+
+    // MARK: Level Speed
+
+
+    var movementSpeed:Double {
+
+
+        switch level {
+
+
+        case 2:
+            return 1.2
+
+
+        case 3:
+            return 0.8
+
+
+        case 4:
+            return 0.5
+
+
+        case 5:
+            return 0.3
+
+
+        default:
+            return 1.8
+
+        }
+
+    }
+
+
+
+    // MARK: Level Up
+
+
+    func increaseLevel(_ newLevel:Int){
+
+
+        level = newLevel
+
+
+        withAnimation(.spring()){
+
+            showLevelUp = true
+
+        }
+
+
+        DispatchQueue.main.asyncAfter(
+            deadline:.now()+1
+        ){
+
+            withAnimation{
+
+                showLevelUp = false
+
+            }
+
+        }
+
+    }
+
+
+
+    // MARK: Card
+
+
+    func infoCard(
+        title:String,
+        value:String,
+        color:Color
+    )->some View{
+
+
+        VStack{
+
+
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.white.opacity(0.8))
+
+
+            Text(value)
+                .font(.title.bold())
+                .foregroundColor(color)
+
+
+        }
+        .frame(
+            width:105,
+            height:85
+        )
+        .background(.ultraThinMaterial)
+        .cornerRadius(20)
+
+    }
+
+
+
+    // MARK: Restart
+
+
+    func restartGame(size:CGSize){
+
+
         score = 0
-        timeRemaining = 10
+        level = 1
+        timeRemaining = 30
         gameOver = false
-        buttonSize = 150
+        lastMove = Date()
 
-        resetButtonPosition()
+
+        resetButtonPosition(size:size)
+
     }
 
-    // MARK: - Random Position
-    func resetButtonPosition() {
-        buttonX = CGFloat.random(in: 80...320)
-        buttonY = CGFloat.random(in: 250...650)
+
+
+    // MARK: Random Position
+
+
+    func resetButtonPosition(size:CGSize){
+
+
+        buttonX = CGFloat.random(
+            in:100...(size.width-100)
+        )
+
+
+        buttonY = CGFloat.random(
+            in:250...(size.height-150)
+        )
+
     }
+
 }
 
+
+
 #Preview {
+
     NavigationStack {
+
         TapFrenzyView()
+
     }
+
 }

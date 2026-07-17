@@ -2,162 +2,505 @@
 //  StatsTab.swift
 //  PlayHub
 //
-//  Created by Amaya Mahavithane on 2026-07-06.
-//
-
 
 import SwiftUI
 import Charts
 
+
 struct StatsTab: View {
+
 
     @StateObject private var vm = StatsVM()
 
+
+
     var body: some View {
+
 
         NavigationStack {
 
-            List {
 
-//                Section {
-//
-//                    Button("Add Test Game") {
-//
-//                        let session = GameSession(
-//                            id: UUID(),
-//                            mode: .tapFrenzy,
-//                            score: Int.random(in: 10...100),
-//                            timestamp: Date(),
-//                            latitude: 0,
-//                            longitude: 0
-//                        )
-//
-//                        GameStorage.shared.saveSession(session)
-//
-//                        vm.loadSessions()
-//
-//                    }
-//
-//                }
+            ScrollView {
 
 
-                Section("Overall") {
-
-                    HStack {
-                        Text("Games Played")
-
-                        Spacer()
-
-                        Text("\(vm.sessions.count)")
-                    }
+                VStack(spacing:20) {
 
 
-                    HStack {
-
-                        Text("Highest Score")
-
-                        Spacer()
-
-                        Text("\(vm.sessions.map{$0.score}.max() ?? 0)")
-                    }
+                    HStack(spacing:12) {
 
 
-                    HStack {
-
-                        Text("Best Tap Frenzy")
-
-                        Spacer()
-
-                        Text("\(vm.bestTapFrenzy)")
-                    }
-
-
-                    HStack {
-
-                        Text("Best Light It Up")
-
-                        Spacer()
-
-                        Text("\(vm.bestLightItUp)")
-                    }
-
-
-                    HStack {
-
-                        Text("Best Quiz Rush")
-
-                        Spacer()
-
-                        Text("\(vm.bestQuizRush)")
-                    }
-
-                }
-
-
-                Section("Score Chart") {
-
-//                    Chart(vm.sessions) { session in
-//
-//                        BarMark(
-//                            x: .value("Game", session.mode.rawValue),
-//                            y: .value("Score", session.score)
-//                        )
-//
-//                    }
-                    Chart(vm.sessions) { session in
-
-                        BarMark(
-                            x: .value("Played", session.timestamp),
-                            y: .value("Score", session.score)
+                        statCard(
+                            title:"Games Played",
+                            value:"\(vm.sessions.count)",
+                            icon:"gamecontroller.fill"
                         )
-                        .foregroundStyle(by: .value("Mode", session.mode.rawValue))
+
+
+                        statCard(
+                            title:"Best Score",
+                            value:"\(highestScore)",
+                            icon:"trophy.fill"
+                        )
+
 
                     }
-                    .frame(height: 250)
-
-                }
 
 
-                Section("Recent Games") {
 
-                    if vm.sessions.isEmpty {
 
-                        Text("No games played yet.")
 
-                    } else {
+                    HStack(spacing:12) {
 
-                        ForEach(vm.sessions.reversed()) { session in
 
-                            VStack(alignment: .leading) {
+                        statCard(
+                            title:"Tap Frenzy",
+                            value:"\(vm.bestTapFrenzy)",
+                            icon:"bolt.fill"
+                        )
 
-                                Text(session.mode.rawValue)
-                                    .font(.headline)
 
-                                Text("Score: \(session.score)")
+                        statCard(
+                            title:"Light It Up",
+                            value:"\(vm.bestLightItUp)",
+                            icon:"lightbulb.fill"
+                        )
 
-                                Text(session.timestamp.formatted())
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
 
-                            }
+                    }
+
+
+
+
+
+                    statCard(
+                        title:"Quiz Rush",
+                        value:"\(vm.bestQuizRush)",
+                        icon:"questionmark.circle.fill"
+                    )
+
+
+
+
+
+
+
+                    VStack(alignment:.leading, spacing:15) {
+
+
+                        Text("Game Performance")
+                            .font(.title2.bold())
+                            .foregroundColor(.white)
+
+
+
+                        Chart(gameStats) { item in
+
+
+                            BarMark(
+
+                                x:
+                                    .value(
+                                        "Game",
+                                        item.name
+                                    ),
+
+
+                                y:
+                                    .value(
+                                        "Score",
+                                        item.score
+                                    )
+
+                            )
+
+                            .foregroundStyle(
+                                .cyan.gradient
+                            )
+
+                            .cornerRadius(10)
+
 
                         }
 
+
+                        .frame(height:250)
+
+
                     }
+
+
+                    .padding()
+
+                    .background(
+                        Color.white.opacity(0.12)
+                    )
+
+                    .cornerRadius(20)
+
+
+
+
+
+
+
+
+                    VStack(alignment:.leading, spacing:15) {
+
+
+                        Text("Recent Games")
+                            .font(.title2.bold())
+                            .foregroundColor(.white)
+
+
+
+                        if vm.sessions.isEmpty {
+
+
+                            Text("No games played yet.")
+                                .foregroundColor(.gray)
+
+
+                        }
+
+
+                        else {
+
+
+                            ForEach(
+                                vm.sessions.reversed()
+                            ) { session in
+
+
+
+                                HStack {
+
+
+                                    VStack(
+                                        alignment:.leading,
+                                        spacing:5
+                                    ) {
+
+
+
+                                        Text(
+                                            session.mode.rawValue
+                                        )
+
+                                        .font(.headline)
+
+                                        .foregroundColor(.white)
+
+
+
+
+                                        Text(
+                                            "Score: \(session.score)"
+                                        )
+
+                                        .foregroundColor(
+                                            .white.opacity(0.8)
+                                        )
+
+
+
+
+                                        Text(
+                                            session.timestamp.formatted()
+                                        )
+
+                                        .font(.caption)
+
+                                        .foregroundColor(.gray)
+
+
+
+                                    }
+
+
+
+                                    Spacer()
+
+
+
+                                    Image(
+                                        systemName:
+                                            iconForGame(
+                                                session.mode
+                                            )
+                                    )
+
+                                    .foregroundColor(.yellow)
+
+                                    .font(.title2)
+
+
+
+                                }
+
+
+
+                                Divider()
+                                    .background(.white.opacity(0.3))
+
+
+                            }
+
+
+
+                        }
+
+
+
+                    }
+
+                    .padding()
+
+                    .background(
+                        Color.white.opacity(0.12)
+                    )
+
+                    .cornerRadius(20)
+
+
+
+                }
+
+                .padding()
+
+
+            }
+
+
+            .background(
+
+                LinearGradient(
+
+                    colors:[
+                        Color.black,
+                        Color.blue.opacity(0.5)
+                    ],
+
+                    startPoint:.top,
+
+                    endPoint:.bottom
+
+                )
+
+                .ignoresSafeArea()
+
+            )
+
+
+
+
+            // WHITE TITLE HERE
+
+            .toolbar {
+
+                ToolbarItem(
+                    placement:.principal
+                ) {
+
+                    Text("Statistics")
+
+                        .font(
+                            .largeTitle.bold()
+                        )
+
+                        .foregroundColor(.white)
 
                 }
 
             }
-          //  .navigationTitle("Statistics")
-            .navigationTitle("Statistics")
+
+
+
             .onAppear {
+
                 vm.loadSessions()
+
             }
+
+
+
         }
 
+
     }
+
+
+
+
+
+
+    var highestScore:Int {
+
+
+        vm.sessions
+            .map{
+                $0.score
+            }
+            .max()
+            ??
+            0
+
+    }
+
+
+
+
+
+
+
+    var gameStats:[GameStat] {
+
+
+        [
+
+            GameStat(
+                name:"Tap",
+                score:vm.bestTapFrenzy
+            ),
+
+
+            GameStat(
+                name:"Light",
+                score:vm.bestLightItUp
+            ),
+
+
+            GameStat(
+                name:"Quiz",
+                score:vm.bestQuizRush
+            )
+
+        ]
+
+    }
+
+
+
+
+
+
+
+    func statCard(
+        title:String,
+        value:String,
+        icon:String
+    ) -> some View {
+
+
+
+        VStack(spacing:8) {
+
+
+            Image(systemName:icon)
+
+                .font(.title)
+
+                .foregroundColor(.yellow)
+
+
+
+
+            Text(value)
+
+                .font(.title.bold())
+
+                .foregroundColor(.white)
+
+
+
+
+            Text(title)
+
+                .font(.caption)
+
+                .foregroundColor(
+                    .white.opacity(0.7)
+                )
+
+
+        }
+
+        .frame(
+            maxWidth:.infinity,
+            minHeight:100
+        )
+
+        .background(
+            .ultraThinMaterial
+        )
+
+        .cornerRadius(20)
+
+
+    }
+
+
+
+
+
+
+
+    func iconForGame(
+        _ mode:GameMode
+    ) -> String {
+
+
+        switch mode {
+
+
+        case .tapFrenzy:
+
+            return "bolt.fill"
+
+
+
+        case .lightItUp:
+
+            return "lightbulb.fill"
+
+
+
+        case .quizRush:
+
+            return "questionmark.circle.fill"
+
+
+
+        }
+
+
+    }
+
+
+
 }
 
+
+
+
+
+struct GameStat: Identifiable {
+
+
+    let id = UUID()
+
+    let name:String
+
+    let score:Int
+
+}
+
+
+
+
 #Preview {
+
+
     StatsTab()
+
+
 }

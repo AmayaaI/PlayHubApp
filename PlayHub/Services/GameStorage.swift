@@ -2,58 +2,89 @@
 //  GameStorage.swift
 //  PlayHub
 //
-//  Created by Amaya Mahavithane on 2026-07-08.
-//
 
 import Foundation
+import Combine
 
-class GameStorage {
+class GameStorage: ObservableObject {
 
     static let shared = GameStorage()
 
     private let key = "GameSessions"
 
+    @Published var sessions: [GameSession] = []
+
+
+    private init() {
+
+        sessions = loadSessions()
+
+    }
+
+
     func loadSessions() -> [GameSession] {
 
         guard let data = UserDefaults.standard.data(forKey: key) else {
+
             return []
+
         }
 
+
         do {
-            return try JSONDecoder().decode([GameSession].self, from: data)
+
+            return try JSONDecoder().decode(
+                [GameSession].self,
+                from: data
+            )
+
         } catch {
-            print(error)
+
+            print("Loading error:", error)
+
             return []
+
         }
     }
 
+
+
     func saveSession(_ session: GameSession) {
 
-        var sessions = loadSessions()
 
         sessions.append(session)
+
 
         do {
 
             let data = try JSONEncoder().encode(sessions)
 
-            UserDefaults.standard.set(data, forKey: key)
+            UserDefaults.standard.set(
+                data,
+                forKey: key
+            )
+
 
         } catch {
 
-            print(error)
+            print("Saving error:", error)
 
         }
 
     }
 
-//    func clearSessions() {
-//
-//        UserDefaults.standard.removeObject(forKey: key)
-//
-//    }
+
+
     func reset() {
-        UserDefaults.standard.removeObject(forKey: key)
+
+
+        sessions.removeAll()
+
+
+        UserDefaults.standard.removeObject(
+            forKey: key
+        )
+
     }
 
 }

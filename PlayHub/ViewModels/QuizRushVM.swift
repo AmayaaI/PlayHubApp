@@ -23,8 +23,11 @@ final class QuizRushVM: ObservableObject {
     @Published var answerWasCorrect = false
     @Published var showAnswerAnimation = false
     
-    @AppStorage("quizHighScore")
-    var highScore = 0
+    @Published var highScore = 0
+
+    init() {
+        refreshHighScore()
+    }
     
     var currentQuestion: TriviaQuestion? {
         guard index < questions.count else { return nil }
@@ -33,6 +36,7 @@ final class QuizRushVM: ObservableObject {
     
     func load() async {
         state = .loading
+        refreshHighScore()
         
         do {
             let fetched = try await TriviaAPI.shared.fetchQuestions()
@@ -98,15 +102,6 @@ final class QuizRushVM: ObservableObject {
     }
     private func saveSession() {
         
-        // Update personal best
-        
-        if score > highScore {
-            
-            highScore = score
-            
-        }
-        
-        
         let session = GameSession(
             id: UUID(),
             mode: .quizRush,
@@ -118,6 +113,11 @@ final class QuizRushVM: ObservableObject {
         
         
         GameStorage.shared.saveSession(session)
+        refreshHighScore()
         
+    }
+
+    private func refreshHighScore() {
+        highScore = GameStorage.shared.bestScore(for: .quizRush)
     }
 }

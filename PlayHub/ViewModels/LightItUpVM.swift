@@ -31,8 +31,7 @@ class LightItUpVM: ObservableObject {
 
     // MARK: - High Score
 
-    @AppStorage("lightHighScore")
-    var highScore = 0
+    @Published var highScore = 0
 
 
 
@@ -53,6 +52,7 @@ class LightItUpVM: ObservableObject {
     init() {
 
         createCards()
+        refreshHighScore()
 
     }
 
@@ -89,6 +89,8 @@ class LightItUpVM: ObservableObject {
 
     func startGame() {
 
+
+        refreshHighScore()
 
         resetGame()
 
@@ -210,18 +212,6 @@ class LightItUpVM: ObservableObject {
 
 
 
-        if score > highScore {
-
-
-            highScore = score
-
-
-        }
-
-
-
-
-
         let session = GameSession(
 
             id: UUID(),
@@ -240,8 +230,13 @@ class LightItUpVM: ObservableObject {
 
 
         GameStorage.shared.saveSession(session)
+        refreshHighScore()
 
 
+    }
+
+    private func refreshHighScore() {
+        highScore = GameStorage.shared.bestScore(for: .lightItUp)
     }
 
 

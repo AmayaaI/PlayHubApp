@@ -4,5 +4,7 @@
 <dict>
 	<key>CFBundleGetInfoString</key>
 	<string></string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>PlayHub saves the location where each game is played so you can view your game history on the map.</string>
 </dict>
 </plist>

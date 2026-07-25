@@ -29,6 +29,12 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
         longitude = location.coordinate.longitude
     }
 
+    /// The latest valid device coordinate, if location access is available.
+    var latestCoordinate: CLLocationCoordinate2D? {
+        guard latitude != 0 || longitude != 0 else { return nil }
+        return CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
+
     func saveCurrentLocation() {
 
         UserDefaults.standard.set(latitude, forKey: "savedLatitude")

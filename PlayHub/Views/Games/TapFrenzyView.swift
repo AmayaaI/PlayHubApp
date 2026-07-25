@@ -22,6 +22,7 @@ struct TapFrenzyView: View {
     // MARK: Movement
 
     @State private var lastMove = Date()
+    @ObservedObject private var playerStore = PlayerStore.shared
 
     let timer = Timer.publish(
         every: 1,
@@ -285,10 +286,14 @@ struct TapFrenzyView: View {
 
             .onAppear {
 
+                highScore = GameStorage.shared.bestScore(for: .tapFrenzy)
                 resetButtonPosition(
                     size:geo.size
                 )
 
+            }
+            .onChange(of: playerStore.selectedPlayerID) {
+                highScore = GameStorage.shared.bestScore(for: .tapFrenzy)
             }
 
 
@@ -379,6 +384,7 @@ struct TapFrenzyView: View {
 
 
                     GameStorage.shared.saveSession(session)
+                    highScore = GameStorage.shared.bestScore(for: .tapFrenzy)
 
 
                 }
@@ -534,6 +540,7 @@ struct TapFrenzyView: View {
     func restartGame(size:CGSize){
 
 
+        highScore = GameStorage.shared.bestScore(for: .tapFrenzy)
         score = 0
         level = 1
         timeRemaining = 30

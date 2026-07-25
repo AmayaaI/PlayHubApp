@@ -8,8 +8,14 @@
 
 import SwiftUI
 
+enum AppTab: Hashable {
+    case home, stats, map, settings
+}
+
 @main
 struct PlayHubApp: App {
+
+    @State private var selectedTab: AppTab = .home
 
     var body: some Scene {
 
@@ -18,27 +24,31 @@ struct PlayHubApp: App {
             let _ = LocationService.shared
             let _ = NotificationService.shared
             
-            TabView {
+            TabView(selection: $selectedTab) {
 
                 HomeTab()
+                    .tag(AppTab.home)
                     .tabItem {
                         Label("Home",
                               systemImage: "house.fill")
                     }
 
-                StatsTab()
+                StatsTab(selectedTab: $selectedTab)
+                    .tag(AppTab.stats)
                     .tabItem {
                         Label("Stats",
                               systemImage: "chart.bar.fill")
                     }
 
                 MapTab()
+                    .tag(AppTab.map)
                     .tabItem {
                         Label("Map",
                               systemImage: "map.fill")
                     }
 
                 SettingsTab()
+                    .tag(AppTab.settings)
                     .tabItem {
                         Label("Settings",
                               systemImage: "gearshape.fill")

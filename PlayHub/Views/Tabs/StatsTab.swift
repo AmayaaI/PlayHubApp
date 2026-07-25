@@ -10,7 +10,14 @@ import Charts
 struct StatsTab: View {
 
 
+    @Binding var selectedTab: AppTab
+
     @StateObject private var vm = StatsVM()
+    @ObservedObject private var playerStore = PlayerStore.shared
+
+    private var playerStatsTitle: String {
+        "Stats for " + (playerStore.selectedPlayer?.name ?? "Selected Player")
+    }
 
 
 
@@ -24,6 +31,13 @@ struct StatsTab: View {
 
 
                 VStack(spacing:20) {
+
+                    Label(
+                        playerStatsTitle,
+                        systemImage: "person.crop.circle.fill"
+                    )
+                    .font(.headline)
+                    .foregroundColor(.white.opacity(0.9))
 
 
                     HStack(spacing:12) {
@@ -77,6 +91,12 @@ struct StatsTab: View {
                         value:"\(vm.bestQuizRush)",
                         icon:"questionmark.circle.fill"
                     )
+
+                    highScoresSection
+
+                    gameHistoryButton
+
+                    savedLocationsButton
 
 
 
@@ -137,132 +157,6 @@ struct StatsTab: View {
 
                     .cornerRadius(20)
 
-
-
-
-
-
-
-
-                    VStack(alignment:.leading, spacing:15) {
-
-
-                        Text("Recent Games")
-                            .font(.title2.bold())
-                            .foregroundColor(.white)
-
-
-
-                        if vm.sessions.isEmpty {
-
-
-                            Text("No games played yet.")
-                                .foregroundColor(.gray)
-
-
-                        }
-
-
-                        else {
-
-
-                            ForEach(
-                                vm.sessions.reversed()
-                            ) { session in
-
-
-
-                                HStack {
-
-
-                                    VStack(
-                                        alignment:.leading,
-                                        spacing:5
-                                    ) {
-
-
-
-                                        Text(
-                                            session.mode.rawValue
-                                        )
-
-                                        .font(.headline)
-
-                                        .foregroundColor(.white)
-
-
-
-
-                                        Text(
-                                            "Score: \(session.score)"
-                                        )
-
-                                        .foregroundColor(
-                                            .white.opacity(0.8)
-                                        )
-
-
-
-
-                                        Text(
-                                            session.timestamp.formatted()
-                                        )
-
-                                        .font(.caption)
-
-                                        .foregroundColor(.gray)
-
-
-
-                                    }
-
-
-
-                                    Spacer()
-
-
-
-                                    Image(
-                                        systemName:
-                                            iconForGame(
-                                                session.mode
-                                            )
-                                    )
-
-                                    .foregroundColor(.yellow)
-
-                                    .font(.title2)
-
-
-
-                                }
-
-
-
-                                Divider()
-                                    .background(.white.opacity(0.3))
-
-
-                            }
-
-
-
-                        }
-
-
-
-                    }
-
-                    .padding()
-
-                    .background(
-                        Color.white.opacity(0.12)
-                    )
-
-                    .cornerRadius(20)
-
-
-
                 }
 
                 .padding()
@@ -275,9 +169,10 @@ struct StatsTab: View {
 
                 LinearGradient(
 
-                    colors:[
-                        Color.black,
-                        Color.blue.opacity(0.5)
+                    colors: [
+                        Color(red: 0.05, green: 0.06, blue: 0.16),
+                        Color(red: 0.16, green: 0.08, blue: 0.34),
+                        Color(red: 0.03, green: 0.28, blue: 0.38)
                     ],
 
                     startPoint:.top,
@@ -312,13 +207,18 @@ struct StatsTab: View {
                 }
 
             }
+            .tint(.white)
 
 
 
             .onAppear {
 
-                vm.loadSessions()
+                vm.loadSessions(for: playerStore.selectedPlayerID)
 
+            }
+
+            .onChange(of: playerStore.selectedPlayerID) {
+                vm.loadSessions(for: playerStore.selectedPlayerID)
             }
 
 
@@ -326,6 +226,114 @@ struct StatsTab: View {
         }
 
 
+    }
+
+    private var highScoresSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("High Scores")
+                .font(.title2.bold())
+                .foregroundColor(.white)
+
+            ForEach(GameMode.allCases, id: \.self) { mode in
+                let leaders = vm.highScores(for: mode)
+                VStack(alignment: .leading, spacing: 8) {
+                    Label(mode.rawValue, systemImage: iconForGame(mode))
+                        .font(.headline)
+                        .foregroundStyle(.cyan)
+                    if leaders.isEmpty {
+                        Text("No scores yet")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.6))
+                    } else {
+                        ForEach(leaders.prefix(3)) { session in
+                            HStack {
+                                Text(session.playerName)
+                                    .foregroundColor(.white)
+                                Spacer()
+                                Text("\(session.score)")
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.yellow)
+                            }
+                            .font(.subheadline)
+                        }
+                    }
+                }
+                if mode != GameMode.allCases.last {
+                    Divider().background(.white.opacity(0.3))
+                }
+            }
+        }
+        .padding()
+        .background(Color.white.opacity(0.12))
+        .cornerRadius(20)
+    }
+
+    private var savedLocationsButton: some View {
+        let locationCount = vm.sessions.filter { $0.latitude != 0 || $0.longitude != 0 }.count
+        let pluralSuffix = locationCount == 1 ? "" : "s"
+        let locationText = locationCount == 0
+            ? "No locations saved yet"
+            : "\(locationCount) game location\(pluralSuffix) saved"
+
+        return NavigationLink {
+            MapTab()
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "map.fill")
+                    .font(.title2)
+                    .foregroundStyle(.black)
+                    .frame(width: 46, height: 46)
+                    .background(.cyan, in: Circle())
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("View Saved Game Locations")
+                        .font(.headline.bold())
+                    Text(locationText)
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.65))
+                }
+
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.cyan)
+            }
+            .foregroundStyle(.white)
+            .padding()
+            .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var gameHistoryButton: some View {
+        NavigationLink {
+            HistoryTab()
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.title2)
+                    .foregroundStyle(.black)
+                    .frame(width: 46, height: 46)
+                    .background(.purple, in: Circle())
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Player Game History")
+                        .font(.headline.bold())
+                    Text("See every game played by this player")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.65))
+                }
+
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.purple)
+            }
+            .foregroundStyle(.white)
+            .padding()
+            .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
 
@@ -430,10 +438,13 @@ struct StatsTab: View {
         )
 
         .background(
-            .ultraThinMaterial
+            Color.white.opacity(0.1),
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
         )
-
-        .cornerRadius(20)
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(.white.opacity(0.13), lineWidth: 1)
+        }
 
 
     }
@@ -500,7 +511,7 @@ struct GameStat: Identifiable {
 #Preview {
 
 
-    StatsTab()
+    StatsTab(selectedTab: .constant(.stats))
 
 
 }

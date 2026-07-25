@@ -13,13 +13,22 @@ class StatsVM: ObservableObject {
     @Published var sessions: [GameSession] = []
 
     init() {
-        loadSessions()
+        loadSessions(for: PlayerStore.shared.selectedPlayerID)
     }
 
-    func loadSessions() {
+    func loadSessions(for playerID: UUID?) {
 
-        sessions = GameStorage.shared.loadSessions()
+        sessions = GameStorage.shared.sessions(for: playerID)
 
+    }
+
+    func highScores(for mode: GameMode) -> [GameSession] {
+        let scoresByPlayer = Dictionary(grouping: GameStorage.shared.sessions.filter { $0.mode == mode }) {
+            $0.playerID?.uuidString ?? $0.playerName
+        }
+        return scoresByPlayer.values
+            .compactMap { $0.max(by: { $0.score < $1.score }) }
+            .sorted { $0.score > $1.score }
     }
     var bestTapFrenzy: Int {
         sessions
